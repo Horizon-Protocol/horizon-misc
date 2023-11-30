@@ -9,18 +9,16 @@ const manageSecondaryPerps = async () => {
     const SECONDARY_KEEPER = 'secondary-perps-keeper-testnet';
 
     const SAFE_MEMORY_LIMIT = 950_000_000;  // should be less than 1GB
-    const SAFE_UPTIME = 120_000; // in milliseconda
+    const SAFE_UPTIME = 120_000; // in milliseconds
 
     try {
         // Always disconnet pm2 after job
-        pm2.connect(function (err) {
+        pm2.connect(async function (err) {
             if (err) {
                 console.error(err);
                 return pm2.disconnect();
             }
-            pm2.list((err, list) => {
-                // console.log(typeof(err), list)
-                // console.log("22found found @found @found @found @found @");
+            pm2.list(async (err, list) => {
                 if (err == null) {
                     let mainKeeper = list.find(function (element) {
                         return (element.name === PRIMARY_KEEPER);
@@ -35,26 +33,25 @@ const manageSecondaryPerps = async () => {
                     if (mainKeeper?.pm2_env?.status == 'online') {
                         // If primary-keeper goes beyond safe limit, restart the second-keeper
                         if (mainKeeper?.monit?.memory > SAFE_MEMORY_LIMIT) {
-                            if (secondKeeper?.pm2_env?.status != 'online') {
-                                pm2.restart(SECONDARY_KEEPER, function (err, app) {
+                            pm2.restart(SECONDARY_KEEPER, function (err, app) {
+                                if (err) {
+                                    return pm2.disconnect();
+                                }
+                                console.log("Keeper beyond safe memory limit!! Restarting secondary keeper,", Date.now());
+                                return pm2.disconnect();
+                            })
+                        }
+                        else {
+                            // If primary is in safe limit and it's been restarted for like a minute or so, close the second keeper
+                            if (mainKeeperUptime > SAFE_UPTIME) {
+                                console.log("Keeper is running safe, Stopping the secondary keeper,", Date.now());
+                                pm2.stop(SECONDARY_KEEPER, function (err, app) {
                                     if (err) {
+                                        console.log(err);
                                         return pm2.disconnect();
                                     }
                                     return pm2.disconnect();
                                 })
-                            }
-                        }
-                        else {
-                        // If primary is in safe limit and it's been restarted for like a minute or so, close the second keeper
-                            if (mainKeeperUptime > SAFE_UPTIME) {
-                                if (secondKeeper?.pm2_env?.status == 'online') {
-                                    pm2.stop(SECONDARY_KEEPER, function (err, app) {
-                                        if (err) {
-                                            return pm2.disconnect();
-                                        }
-                                        return pm2.disconnect();
-                                    })
-                                }
                             }
                         }
                     }
@@ -67,10 +64,9 @@ const manageSecondaryPerps = async () => {
                             return pm2.disconnect();
                         })
                     }
-
                 }
+                return
             })
-            return pm2.disconnect();
         })
 
     } catch (error) {
