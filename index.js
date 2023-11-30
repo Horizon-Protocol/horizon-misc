@@ -1,6 +1,8 @@
 const pm2 = require('pm2');
 
-// Restart 2nd keeper outside safe memory
+// Restart 2nd keeper outside safe memory,
+// Don't run this file using pm2 as it will indefinitely run this,
+// use linux cron which is sufficient to do the job
 const manageSecondaryPerps = async () => {
 
     const PRIMARY_KEEPER = 'primary-perps-keeper-testnet';

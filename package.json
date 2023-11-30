@@ -4,7 +4,7 @@
   "description": "A controller logic to manage perps-keepers running with pm2",
   "main": "index.js",
   "scripts": {
-    "start": "pm2 start ecosystem.config.js --only controller-perps-keeper-testnet"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "Rout Chaitanya",
